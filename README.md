@@ -188,6 +188,6 @@ docker compose exec job_market psql -U "$JOB_DB_USER" -d "$JOB_DB_NAME"
 
 - **Email**: andresgonzalezmillan03@gmail.com
 - **LinkedIn**: [Andres Gonzalez](https://www.linkedin.com/in/andr%C3%A9s-gonz%C3%A1lez-a53bb929a/)
-- **GitHub**: [@yourprofile](https://github.com/lacreeta)
+- **GitHub**: [@lacreeta](https://github.com/lacreeta)
 
 For contributions, please open an issue or submit a pull request.

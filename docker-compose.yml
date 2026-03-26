@@ -17,6 +17,12 @@ x-airflow-common:
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+    PYTHONPATH: /opt/airflow
+    DB_HOST: job_db
+    DB_PORT: 5432
+    DB_NAME: ${JOB_DB_NAME}
+    DB_USER: ${JOB_DB_USER}
+    DB_PASSWORD: ${JOB_DB_PASSWORD}
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
@@ -26,8 +32,6 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/sql:/opt/airflow/sql
     - ${AIRFLOW_PROJ_DIR:-.}/src:/opt/airflow/src
     - ${AIRFLOW_PROJ_DIR:-.}/tests:/opt/airflow/tests
-  group_add:
-    - "${DOCKER_GID:-990}"
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -60,6 +64,7 @@ services:
       POSTGRES_DB: ${JOB_DB_NAME}
     volumes:
       - job-db-volume:/var/lib/postgresql/data
+      - ./sql/init_job_db.sql:/docker-entrypoint-initdb.d/init_job_db.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s

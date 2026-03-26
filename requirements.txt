@@ -1,0 +1,6 @@
+pandas
+requests
+pendulum
+apache-airflow
+apache-airflow-task-sdk
+psycopg2-binary

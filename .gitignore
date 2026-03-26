@@ -1,1 +1,13 @@
 .env
+venv/
+data/
+logs/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite
+*.json
+*.csv
+*.log
