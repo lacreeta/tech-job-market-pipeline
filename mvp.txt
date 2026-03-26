@@ -1,0 +1,8 @@
+MVP
+
+
+Este proyecto extraerá ofertas tech desde una fuente pública, sea API, web scrapping, etc.
+
+Transformará los datos y los limpiará para guardar los resultados en una base de datos PostgreSQL.
+
+Este proyecto se ejecutará diariamente con Apache Airflow.
