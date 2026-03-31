@@ -1,55 +1,72 @@
 from airflow.sdk import dag, task
 from pendulum import datetime
-from src.extract.jobs_api import fetch_jobs
-from src.transform.jobs_transformer import transform_jobs
-
 
 @dag(
     start_date=datetime(2026,3,26, tz="Europe/Madrid"),
     schedule="@daily",
     catchup=False,
-    tags=["jobs", "etl", "portfolio"]
+    tags=["jobs", "etl", "portfolio"],
+    description="A DAG to extract, transform, and load tech job data into S3 and a database.",
 )
 def tech_jobs_pipeline():
 
     @task
-    def extract_jobs():
+    def extract_and_save_raw_jobs_task():
         """Extract job data from the API."""
+        from src.extract.jobs_api import fetch_jobs
+        from src.utils.file_utils import save_raw_jobs_s3
+        from airflow.sdk import get_current_context
+
         jobs = fetch_jobs()
-        print(f"Raw: {len(jobs)} jobs")
-        return jobs
+        if jobs is None:
+            raise ValueError("Jobs empty.")
+        
+        partition = get_current_context()["data_interval_start"].format("DD-MM-YYYY")
+
+        path = save_raw_jobs_s3(
+            jobs=jobs,
+            bucket_name="my-airflow-jobs-bucket",
+            partition=partition
+        )
+
+        print(f"Raw save to {path}")
+        return path
 
     @task
-    def transform_jobs_task(raw_jobs):
+    def transform_and_save_processed_task(raw_s3_path):
         """Transform raw job data into a structured format."""
+        from src.utils.file_utils import read_jobs_from_s3, save_processed_jobs_s3
+        from src.transform.jobs_transformer import transform_jobs
+        from airflow.sdk import get_current_context
+
+        raw_jobs = read_jobs_from_s3(raw_s3_path)
         clean_jobs = transform_jobs(raw_jobs)
-        print(f"Clean: {len(clean_jobs)} jobs")
-        return clean_jobs
-    
-    @task
-    def save_processed_task(clean_jobs):
-        """Save the processed job data to a JSON file."""
-        from src.utils.file_utils import save_processed_jobs
 
-        saved_path = save_processed_jobs(clean_jobs)
-        print(f"Processed jobs saved to: {saved_path}")
-        return saved_path
+        partition = get_current_context()["data_interval_start"].format("DD-MM-YYYY")
+
+        path = save_processed_jobs_s3(
+            jobs=clean_jobs,
+            bucket_name="my-airflow-jobs-bucket",
+            partition=partition
+        )
+
+        print(f"Processed save to {path}")
+        return path
 
     @task
-    def load_jobs_task(clean_jobs):
+    def load_jobs_task(processed_s3_path):
         """Load the processed job data into the database."""
+        from src.utils.file_utils import read_jobs_from_s3
         from src.load.postgres_loader import load_jobs
 
+        clean_jobs = read_jobs_from_s3(processed_s3_path)
         print(f"Loading {len(clean_jobs)} jobs into the database")
         load_jobs(clean_jobs)
 
     # Setting up task dependencies
-    raw_jobs = extract_jobs()
-    transformed_jobs = transform_jobs_task(raw_jobs)
-    saved = save_processed_task(transformed_jobs)
-    loaded = load_jobs_task(transformed_jobs)
+    raw_s3_path = extract_and_save_raw_jobs_task()
+    processed_s3_path = transform_and_save_processed_task(raw_s3_path)
+    load = load_jobs_task(processed_s3_path)
     
-    saved >> loaded
-
 # Instantiate the DAG
 tech_jobs_pipeline()

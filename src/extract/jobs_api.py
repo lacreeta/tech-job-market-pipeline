@@ -1,8 +1,5 @@
 import requests
 import logging
-from datetime import datetime
-from pathlib import Path
-from src.utils.file_utils import save_raw_jobs
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +17,6 @@ def fetch_jobs(source="remotive") -> list[dict]:
     data = response.json()
     jobs = data.get("jobs", [])
 
-    # guardar raw
-    saved_path = save_raw_jobs(jobs)
-    logger.info("Raw jobs saved to: %s", saved_path)
+    logger.info("Fetched %d jobs", len(jobs))
     
     return jobs

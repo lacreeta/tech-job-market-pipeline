@@ -30,7 +30,8 @@ def load_jobs(clean_jobs: list[dict]):
     insert_query = f"""
     INSERT INTO jobs_clean ({", ".join(COLUMNS)})
     VALUES %s
-    ON CONFLICT (job_url) DO NOTHING;
+    ON CONFLICT (job_url) DO NOTHING
+    RETURNING job_url;
     """
 
     conn = get_db_connection()
@@ -38,7 +39,7 @@ def load_jobs(clean_jobs: list[dict]):
 
     try:
         execute_values(cursor, insert_query, rows)
-        inserted_rows = cursor.rowcount
+        inserted_rows = len(cursor.fetchall())
         conn.commit()
 
         logger.info("Loaded %d jobs into jobs_clean table.", inserted_rows)
