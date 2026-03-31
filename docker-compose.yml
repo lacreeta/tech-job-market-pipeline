@@ -23,6 +23,8 @@ x-airflow-common:
     DB_NAME: ${JOB_DB_NAME}
     DB_USER: ${JOB_DB_USER}
     DB_PASSWORD: ${JOB_DB_PASSWORD}
+    AWS_PROFILE: airflow-role
+    AWS_DEFAULT_REGION: eu-west-1
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
@@ -32,6 +34,7 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/sql:/opt/airflow/sql
     - ${AIRFLOW_PROJ_DIR:-.}/src:/opt/airflow/src
     - ${AIRFLOW_PROJ_DIR:-.}/tests:/opt/airflow/tests
+    - /home/andres/.aws:/home/airflow/.aws:ro
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on

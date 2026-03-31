@@ -4,3 +4,4 @@ pendulum
 apache-airflow
 apache-airflow-task-sdk
 psycopg2-binary
+apache-airflow-providers-amazon
