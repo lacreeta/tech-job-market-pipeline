@@ -1,6 +1,10 @@
 from airflow.sdk import dag, task
 from pendulum import datetime
 
+def build_partition_from_context() -> str:
+    from airflow.sdk import get_current_context
+    return get_current_context()["data_interval_start"].format("DD-MM-YYYY")
+
 @dag(
     start_date=datetime(2026,3,26, tz="Europe/Madrid"),
     schedule="@daily",
@@ -14,14 +18,13 @@ def tech_jobs_pipeline():
     def extract_and_save_raw_jobs_task():
         """Extract job data from the API."""
         from src.extract.jobs_api import fetch_jobs
-        from src.utils.file_utils import save_raw_jobs_s3
-        from airflow.sdk import get_current_context
+        from src.utils.s3_utils import save_raw_jobs_s3
 
         jobs = fetch_jobs()
-        if jobs is None:
-            raise ValueError("Jobs empty.")
+        if not jobs:
+            raise ValueError("No jobs were fetched from the API.")
         
-        partition = get_current_context()["data_interval_start"].format("DD-MM-YYYY")
+        partition = build_partition_from_context()
 
         path = save_raw_jobs_s3(
             jobs=jobs,
@@ -35,14 +38,13 @@ def tech_jobs_pipeline():
     @task
     def transform_and_save_processed_task(raw_s3_path):
         """Transform raw job data into a structured format."""
-        from src.utils.file_utils import read_jobs_from_s3, save_processed_jobs_s3
+        from src.utils.s3_utils import read_jobs_from_s3, save_processed_jobs_s3
         from src.transform.jobs_transformer import transform_jobs
-        from airflow.sdk import get_current_context
 
         raw_jobs = read_jobs_from_s3(raw_s3_path)
         clean_jobs = transform_jobs(raw_jobs)
 
-        partition = get_current_context()["data_interval_start"].format("DD-MM-YYYY")
+        partition = build_partition_from_context()
 
         path = save_processed_jobs_s3(
             jobs=clean_jobs,
@@ -56,7 +58,7 @@ def tech_jobs_pipeline():
     @task
     def load_jobs_task(processed_s3_path):
         """Load the processed job data into the database."""
-        from src.utils.file_utils import read_jobs_from_s3
+        from src.utils.s3_utils import read_jobs_from_s3
         from src.load.postgres_loader import load_jobs
 
         clean_jobs = read_jobs_from_s3(processed_s3_path)

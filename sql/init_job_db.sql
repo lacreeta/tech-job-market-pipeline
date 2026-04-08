@@ -10,5 +10,6 @@ CREATE TABLE IF NOT EXISTS jobs_clean (
     description TEXT,
     skills TEXT[],
     category VARCHAR(50),
-    inserted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    inserted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
